@@ -1,6 +1,7 @@
 #Manually testing gauntlet color sync when in practice lobbies since there are no log entries when you enter the practice lobby.
 #To-do gauntlet swap region
 #https://imgur.com/a/YClCDqN
+#https://imgur.com/4s6WmvX
 import win32api
 import time
 import pyautogui
