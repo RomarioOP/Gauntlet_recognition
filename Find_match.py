@@ -11,7 +11,8 @@ from datetime import datetime
 import time
 import datetime
 import re
-list_of_files = glob.glob('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
+#list_of_files = glob.glob('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
+list_of_files = glob.glob('H:\\Documents\\Programming\\Spellbreak\\Log_examples\\*') # * means all if need specific format then *.csv
 latest_file = max(list_of_files, key=os.path.getmtime)
 match_info={}
 match_info['FileName'] = latest_file

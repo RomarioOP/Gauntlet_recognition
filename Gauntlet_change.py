@@ -19,7 +19,7 @@ for i in all_elements:
 elements.remove(main_hand)
 
 #assign the light
-bulb = Bulb("192.168.178.15")
+bulb = Bulb("192.168.178.")
 rgb = {
 	'fire': lambda: print (bulb.set_rgb(255,0,0)),
 	'toxic': lambda: print (bulb.set_rgb(0,255,0)),
@@ -71,7 +71,7 @@ while True:
                     print ("Running gauntlet function.")
                     gauntlet()
 
-    time.sleep(0.5)
+    time.sleep(0.3)
 
 
 
