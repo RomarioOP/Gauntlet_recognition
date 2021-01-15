@@ -11,6 +11,7 @@ from yeelight import LightType
 import glob
 import os
 main_hand="wind"
+print (main_hand)
 
 all_elements = ["wind", "toxic", "ice", "fire", "stone" ,"lightning", "noodle"]
 elements = []
@@ -19,7 +20,7 @@ for i in all_elements:
 elements.remove(main_hand)
 
 #assign the light
-bulb = Bulb("192.168.178.")
+bulb = Bulb("192.168.178.15")
 rgb = {
 	'fire': lambda: print (bulb.set_rgb(255,0,0)),
 	'toxic': lambda: print (bulb.set_rgb(0,255,0)),
@@ -75,3 +76,8 @@ while True:
 
 
 
+try:
+    while True:
+        do_something()
+except KeyboardInterrupt:
+    pass

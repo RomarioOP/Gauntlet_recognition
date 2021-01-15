@@ -11,8 +11,8 @@ from datetime import datetime
 import time
 import datetime
 import re
-#list_of_files = glob.glob('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
-list_of_files = glob.glob('H:\\Documents\\Programming\\Spellbreak\\Log_examples\\*') # * means all if need specific format then *.csv
+list_of_files = glob.glob('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
+#list_of_files = glob.glob('H:\\Documents\\Programming\\Spellbreak\\Log_examples\\*') # * means all if need specific format then *.csv
 latest_file = max(list_of_files, key=os.path.getmtime)
 match_info={}
 match_info['FileName'] = latest_file
@@ -75,9 +75,9 @@ find_match_line_in_file(latest_started_match, 'Start')
 
 #Search for match end
 matched_end_lines = search_string_in_file((latest_file), 'Received the final placement for the client in the match', 0)
-latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
-find_match_times(latest_ended_match)
-find_match_line_in_file(latest_ended_match, 'End')
+#latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
+#find_match_times(latest_ended_match)
+#find_match_line_in_file(latest_ended_match, 'End')
 
 
 print (match_info)
