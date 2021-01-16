@@ -8,6 +8,16 @@ import win32api
 import time
 from multiprocessing import Process
 from threading import Thread
+from yeelight import Bulb
+from yeelight import LightType
+import win32api
+import time
+import pyautogui
+import yeelight
+from yeelight import Bulb
+from yeelight import LightType
+import glob
+import os
 
 #Define global variables.
 latest_file=""
@@ -17,10 +27,14 @@ completed_match=False
 last_used_gauntlet=""
 last_offhand=""
 sequence_completed=False
+main_hand=""
+
+
+
 
 
 def find_latest_log_file():
-    list_of_files = glob.glob('C:\\Users\\Romario\\Documents\\Programming\\Spellbreak\\Log_examples\\*') # * means all if need specific format then *.csv
+    list_of_files = glob.glob('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
     global latest_file
     latest_file = max(list_of_files, key=os.path.getmtime)
     match_info['FileName'] = latest_file
@@ -68,6 +82,7 @@ def find_match_line_in_file(match, x):
     #print (match_info)
 
 def find_main_hand(file_name):
+    global main_hand
     for elem in file_name:
         #print('Line Number = ', elem[0], ' :: Line = ', elem[1])
         if "Pyromancer" in str(file_name):
@@ -76,14 +91,14 @@ def find_main_hand(file_name):
             main_hand="wind"
         elif "Conduit" in str(file_name):
             main_hand="lightning"
-        elif "Stonehaper" in str(file_name):
+        elif "Stoneshaper" in str(file_name):
             main_hand="stone"
         elif "Toxicologist" in str(file_name):
             main_hand="toxic"
         elif "Frostborn" in str(file_name):
             main_hand="ice"
         #match_info['Main_hand'] = main_hand
-    print ("Main hand found: "+main_hand)
+    print ("Main hand found: "+ main_hand)
 
 def gauntlet():
         global last_offhand
@@ -104,24 +119,29 @@ def find_completed_match():
     global sequence_completed
     while completed_match==False:
         matched_end_lines = search_string_in_file((latest_file), 'Received the final placement for the client in the match', 0)
-        latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
-        print(latest_ended_match)
-        #Find match end time and match end line number 
-        find_match_times(latest_ended_match, 'End')
-        find_match_line_in_file(latest_ended_match, 'End')
-        if match_info['MatchStartLineNumber'] > match_info['MatchEndLineNumber']:
-            print("Order doesn't match.")
-            time.sleep(3)      
-        else:
-            print("Order matches.")
+        if len(matched_end_lines) > 0:
+            latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
+            print(latest_ended_match)
+            #Find match end time and match end line number 
             find_match_times(latest_ended_match, 'End')
             find_match_line_in_file(latest_ended_match, 'End')
-            completed_match=True
-            sequence_completed=True
-            print (match_info)
+            if match_info['MatchStartLineNumber'] < match_info['MatchEndLineNumber']:
+                print("Order doesn't match.")
+                time.sleep(3)      
+            else:
+                print("Order matches.")
+                find_match_times(latest_ended_match, 'End')
+                find_match_line_in_file(latest_ended_match, 'End')
+                completed_match=True
+                sequence_completed=True
+                print (match_info)
+        else:
+            time.sleep(3)
 
 def check_mouse_input():
     global completed_match
+    global last_used_gauntlet
+    global main_hand
     while completed_match==False:
         for i in range(1, 256):
             if win32api.GetAsyncKeyState(i):
@@ -129,10 +149,41 @@ def check_mouse_input():
                     ### Main hand code
                     if i == 1:
                         print ("Attacking with main hand.")
-                        print (i)
+                        if last_used_gauntlet==main_hand:
+                            print("Light is already set to main hand settings. Skipping api call.")
+                        else:
+                            print("Activating color change.")
+                            rgb[(main_hand)]()
+                            last_used_gauntlet=main_hand
+                    ### End main hand code
+                    elif i == 2:
+                        print ("Attacking with off hand.")
+                        print ("Running gauntlet function.")
+                        gauntlet()
+
     time.sleep(0.3)
 
-
+def set_rgb_codes():
+    global main_hand
+    global bulb
+    global rgb
+    bulb = Bulb("192.168.178.15")
+    rgb = {
+        'fire': lambda: print (bulb.set_rgb(255,0,0)),
+        'toxic': lambda: print (bulb.set_rgb(0,255,0)),
+        'ice': lambda: print (bulb.set_rgb(0,0,255)),
+        'wind': lambda: print (bulb.set_rgb(255,255,0)),
+        'lightning': lambda: print (bulb.set_rgb(127,0,255)),
+        'stone': lambda: print (bulb.set_rgb(153,76,8)),
+        'noodle': lambda: print (bulb.set_rgb(255,20,147))
+    }
+    all_elements = ["wind", "toxic", "ice", "fire", "stone" ,"lightning", "noodle"]
+    global elements
+    elements = []
+    for i in all_elements:
+        elements.append(i)
+    elements.remove(main_hand)
+    
    
 #Check if a matches have been found
 def find_matches():
@@ -145,9 +196,11 @@ def find_matches():
 
 #Set Special keys
 #To-do: get this info from ini file
+global special_keys
 special_keys = [0x01, 0x02]
 special = {0x01: 'leftClick',
            0x02: 'rightClick',}
+time.sleep(1)
            
 #Find a started match in the latest log file. Function is a loop that resets the latest log file
 find_matches()
@@ -160,6 +213,8 @@ find_match_times(latest_started_match, 'Start')
 find_match_line_in_file(latest_started_match, 'Start')
 #Now that a match has been found, the mainhand can be determined.
 find_main_hand(latest_started_match)
+#Main hand found, setting rgb codes:
+set_rgb_codes()
 
 #Start checking for mouse input and start looking for end of match.
 t1 = Thread(target = find_completed_match)
