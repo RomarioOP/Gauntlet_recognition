@@ -5,19 +5,17 @@ import time
 import datetime
 import re
 import win32api
-import time
 from multiprocessing import Process
 from threading import Thread
 from yeelight import Bulb
 from yeelight import LightType
-import win32api
-import time
 import pyautogui
-import yeelight
-from yeelight import Bulb
-from yeelight import LightType
-import glob
-import os
+
+#To-do: read user settings 
+#Store session data in json file
+#Ensure location to look for icons is always in folder where the script runs
+#Add a "session" loop. This will enable the script to re-run when a match has been succesfully started and ended.
+
 
 #Define global variables.
 latest_file=""
@@ -32,9 +30,9 @@ main_hand=""
 
 
 
-
+#print (os.getenv('LOCALAPPDATA'))
 def find_latest_log_file():
-    list_of_files = glob.glob('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
+    list_of_files = glob.glob(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
     global latest_file
     latest_file = max(list_of_files, key=os.path.getmtime)
     match_info['FileName'] = latest_file
@@ -215,7 +213,6 @@ find_match_line_in_file(latest_started_match, 'Start')
 find_main_hand(latest_started_match)
 #Main hand found, setting rgb codes:
 set_rgb_codes()
-
 #Start checking for mouse input and start looking for end of match.
 t1 = Thread(target = find_completed_match)
 t2 = Thread(target = check_mouse_input)
