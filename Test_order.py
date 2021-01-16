@@ -17,20 +17,12 @@ import pyautogui
 #Add a "session" loop. This will enable the script to re-run when a match has been succesfully started and ended.
 
 
-#Define global variables.
-latest_file=""
-match_found=False
-match_info={}
-completed_match=False
-last_used_gauntlet=""
-last_offhand=""
-sequence_completed=False
-main_hand=""
 
 
 
 
 #print (os.getenv('LOCALAPPDATA'))
+#Get latest log file
 def find_latest_log_file():
     list_of_files = glob.glob(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
     global latest_file
@@ -38,6 +30,7 @@ def find_latest_log_file():
     match_info['FileName'] = latest_file
     print (latest_file)
 
+#Search if file contains a certain string
 def search_string_in_file(file_name, string_to_search, line_number):
     """Search for the given string in file and return lines containing that string,
     along with line numbers"""
@@ -63,22 +56,23 @@ def search_string_in_file(file_name, string_to_search, line_number):
                 #print(list_of_results)
     return list_of_results
 
+#Filter timestamp in a string based on regular expression
 def find_match_times(match, order):
     regex_match_timestamp=re.findall(r'\d\d\d\d\.[^\]]*', str(match))
     match_timestamp=''.join(regex_match_timestamp)
     match_info['Match'+order] = match_timestamp
 
-
+#Filter line number in a string based on regular expression
 def find_match_line_in_file(match, x):
     regex_match_line_number=re.findall(r'\(\w+,', str(match))
     match_line_number=''.join(regex_match_line_number)
     match_line_number = match_line_number.replace(',', '')
     match_line_number = match_line_number.replace('(', '')
-    #print (regex_match_line_number)
-    #Add match_timestamp to dictionary
+
     match_info['Match'+x+'LineNumber'] = match_line_number
     #print (match_info)
 
+#Find character class in string and assign the correct main hand element
 def find_main_hand(file_name):
     global main_hand
     for elem in file_name:
@@ -98,12 +92,13 @@ def find_main_hand(file_name):
         #match_info['Main_hand'] = main_hand
     print ("Main hand found: "+ main_hand)
 
+#Define which off hand gauntlet is equiped
 def gauntlet():
         global last_offhand
         global last_used_gauntlet
         global main_hand
         for i in elements:
-            if pyautogui.locateOnScreen("H:\\Documents\\Programming\\Spellbreak\\Elements\\"+(i)+".png", region=(660,900,600,100), grayscale=True, confidence=0.8) != None:
+            if pyautogui.locateOnScreen("H:\\Documents\\Programming\\Spellbreak\\Elements\\"+(i)+".png", region=(region), grayscale=True, confidence=0.8) != None:
                 if last_offhand != i or last_offhand != last_used_gauntlet:
                     print("Switched from "+(last_offhand)+" to "+(i))                
                     rgb[(i)]()
@@ -112,6 +107,7 @@ def gauntlet():
                 else:
                     print("Attacking with the same gauntlet as before. Skipping api call.")
 
+#Check if a match has been started and finished
 def find_completed_match():
     global completed_match
     global sequence_completed
@@ -136,6 +132,7 @@ def find_completed_match():
         else:
             time.sleep(3)
 
+#Track mouse events
 def check_mouse_input():
     global completed_match
     global last_used_gauntlet
@@ -158,9 +155,9 @@ def check_mouse_input():
                         print ("Attacking with off hand.")
                         print ("Running gauntlet function.")
                         gauntlet()
-
     time.sleep(0.3)
 
+#Set rgb color codes
 def set_rgb_codes():
     global main_hand
     global bulb
@@ -192,6 +189,15 @@ def find_matches():
         print("Looking for matches.")
         time.sleep(1)
 
+#Assign the region/location of the screen that has to be looked over to find the off hand
+def set_gauntlet position():
+    global region
+    with open('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
+        if 'bSwapGauntletSlots=False' in f.read():
+            region=(660,900,600,100)
+        else:
+            region=("tbd")
+
 #Set Special keys
 #To-do: get this info from ini file
 global special_keys
@@ -199,7 +205,18 @@ special_keys = [0x01, 0x02]
 special = {0x01: 'leftClick',
            0x02: 'rightClick',}
 time.sleep(1)
-           
+
+
+#Start of script!
+#Define global variables.
+latest_file=""
+match_found=False
+match_info={}
+completed_match=False
+last_used_gauntlet=""
+last_offhand=""
+sequence_completed=False
+main_hand=""
 #Find a started match in the latest log file. Function is a loop that resets the latest log file
 find_matches()
 print ("Matches found")
