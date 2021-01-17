@@ -109,8 +109,7 @@ def gauntlet():
 
 #Check if a match has been started and finished
 def find_completed_match():
-    global completed_match
-    global sequence_completed
+    global should_restart
     while completed_match==False:
         matched_end_lines = search_string_in_file((latest_file), 'Received the final placement for the client in the match', 0)
         if len(matched_end_lines) > 0:
@@ -119,16 +118,19 @@ def find_completed_match():
             #Find match end time and match end line number 
             find_match_times(latest_ended_match, 'End')
             find_match_line_in_file(latest_ended_match, 'End')
-            if match_info['MatchStartLineNumber'] < match_info['MatchEndLineNumber']:
+            if int(match_info['MatchStartLineNumber']) > int(match_info['MatchEndLineNumber']):
                 print("Order doesn't match.")
+                print (match_info['MatchStartLineNumber'])
+                print (match_info['MatchEndLineNumber'])
                 time.sleep(3)      
             else:
                 print("Order matches.")
                 find_match_times(latest_ended_match, 'End')
                 find_match_line_in_file(latest_ended_match, 'End')
-                completed_match=True
-                sequence_completed=True
                 print (match_info)
+                print ("Session ended. Restarting new session.")
+                time.sleep(2)
+                should_restart = True
         else:
             time.sleep(3)
 
@@ -155,7 +157,8 @@ def check_mouse_input():
                         print ("Attacking with off hand.")
                         print ("Running gauntlet function.")
                         gauntlet()
-    time.sleep(0.3)
+        time.sleep(0.3)
+
 
 #Set rgb color codes
 def set_rgb_codes():
@@ -190,7 +193,7 @@ def find_matches():
         time.sleep(1)
 
 #Assign the region/location of the screen that has to be looked over to find the off hand
-def set_gauntlet position():
+def set_gauntlet_position():
     global region
     with open('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
         if 'bSwapGauntletSlots=False' in f.read():
@@ -207,31 +210,54 @@ special = {0x01: 'leftClick',
 time.sleep(1)
 
 
+
 #Start of script!
 #Define global variables.
-latest_file=""
-match_found=False
-match_info={}
-completed_match=False
-last_used_gauntlet=""
-last_offhand=""
-sequence_completed=False
-main_hand=""
-#Find a started match in the latest log file. Function is a loop that resets the latest log file
-find_matches()
-print ("Matches found")
-#If matches found then find last match.
-latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
-print ("Latest match:", latest_started_match)
-#Find match start time and match start line number and add to match information list.
-find_match_times(latest_started_match, 'Start')
-find_match_line_in_file(latest_started_match, 'Start')
-#Now that a match has been found, the mainhand can be determined.
-find_main_hand(latest_started_match)
-#Main hand found, setting rgb codes:
-set_rgb_codes()
-#Start checking for mouse input and start looking for end of match.
-t1 = Thread(target = find_completed_match)
-t2 = Thread(target = check_mouse_input)
-t1.start()
-t2.start()
+def start_complete_script():
+    global latest_file
+    global match_found
+    global match_info
+    global completed_match
+    global last_used_gauntlet
+    global last_offhand
+    global main_hand
+
+    latest_file=""
+    match_found=False
+    match_info={}
+    completed_match=False
+    last_used_gauntlet=""
+    last_offhand=""
+    main_hand=""
+    #Find a started match in the latest log file. Function is a loop that resets the latest log file
+    find_matches()
+    print ("Matches found")
+    #If matches found then find last match.
+    latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
+    print ("Latest match:", latest_started_match)
+    #Find match start time and match start line number and add to match information list.
+    find_match_times(latest_started_match, 'Start')
+    find_match_line_in_file(latest_started_match, 'Start')
+    #Now that a match has been found, the mainhand can be determined.
+    find_main_hand(latest_started_match)
+    set_gauntlet_position()
+    #Main hand found, setting rgb codes:
+    set_rgb_codes()
+    #Start checking for mouse input and start looking for end of match.
+    t1 = Thread(target = find_completed_match)
+    t2 = Thread(target = check_mouse_input)
+    t1.start()
+    t2.start()
+    print("setting restart to true")
+    should_restart = True
+
+
+should_restart=True
+while should_restart==True:
+    if should_restart==True:
+        should_restart=False
+        start_complete_script()
+    else:
+        should_restart=True
+
+    
