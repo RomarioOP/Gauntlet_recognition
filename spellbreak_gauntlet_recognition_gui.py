@@ -14,58 +14,22 @@ import json
 import threading
 import inspect
 import ctypes
+import sys
+import tkinter
+import _tkinter
+from tkinter import *
+from _tkinter import *
+from subprocess import Popen
 
-
+#https://stackoverflow.com/questions/27050492/how-do-you-create-a-tkinter-gui-stop-button-to-break-an-infinite-loop
 #To-do: read user settings 
 #Store session data in json file
 #Ensure location to look for icons is always in folder where the script runs
-#Add a "session" loop. This will enable the script to re-run when a match has been succesfully started and ended.
+#Look for match cancel
+#[2021.01.16-14.03.27:969][246]LogGameMode:Display: Match State Changed from WaitingToStart to LeavingMap !json{"pid":13380,"env":"production","ver":"2.0.10050"}
+#Create gui if needed
 
 
-
-def _async_raise(tid, exctype):
-    """raises the exception, performs cleanup if needed"""
-    if not inspect.isclass(exctype):
-        raise TypeError("Only types can be raised (not instances)")
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-    if res == 0:
-        raise ValueError("invalid thread id")
-    elif res != 1:
-        # """if it returns a number greater than one, you're in trouble, 
-        # and you should call it again with exc=NULL to revert the effect"""
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
-        raise SystemError("PyThreadState_SetAsyncExc failed")
-
-
-class Thread(threading.Thread):
-    def _get_my_tid(self):
-        """determines this (self's) thread id"""
-        if not self.isAlive():
-            raise threading.ThreadError("the thread is not active")
-        
-        # do we have it cached?
-        if hasattr(self, "_thread_id"):
-            return self._thread_id
-        
-        # no, look for it in the _active dict
-        for tid, tobj in threading._active.items():
-            if tobj is self:
-                self._thread_id = tid
-                return tid
-        
-        raise AssertionError("could not determine the thread's id")
-    
-    def raise_exc(self, exctype):
-        """raises the given exception type in the context of this thread"""
-        _async_raise(self._get_my_tid(), exctype)
-    
-    def terminate(self):
-        """raises SystemExit in the context of the given thread, which should 
-        cause the thread to exit silently (unless caught)"""
-        self.raise_exc(SystemExit)
-
-
-#print (os.getenv('LOCALAPPDATA'))
 #Get latest log file
 def find_latest_log_file():
     list_of_files = glob.glob(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
@@ -90,14 +54,6 @@ def search_string_in_file(file_name, string_to_search, line_number):
             if string_to_search in line:
                 # If yes, then add the line number & line as a tuple in the list
                 list_of_results.append((line_number, line.rstrip()))
-                #print (list_of_results)
-                #match_start_line_number=line_number[(len(line_number)-1)]
-                #match_info['MatchStartLineNumber'] = match_start_line_number
-    # Return list of tuples containing line numbers and lines where string is found
-                #print("Match found. Resuming script.")
-                #global match_found
-                #match_found=True
-                #print(list_of_results)
     return list_of_results
 
 #Filter timestamp in a string based on regular expression
@@ -151,10 +107,10 @@ def gauntlet():
                 else:
                     print("Attacking with the same gauntlet as before. Skipping api call.")
 
-def terminate():
-    print("lets stop it")
-    for thread in threading.enumerate(): 
-        print(thread.name)
+# def terminate():
+#     print("lets stop it")
+#     for thread in threading.enumerate(): 
+#         print(thread.name)
 
     
 
@@ -183,7 +139,7 @@ def find_completed_match():
                 find_match_times(latest_ended_match, 'End')
                 find_match_line_in_file(latest_ended_match, 'End')
                 print (match_info)
-                print ("Session ended. Restarting new session.")
+                print ("Session ended. Starting new session.")
                 #terminate()
                 completed_match=True
                 time.sleep(5)
@@ -304,69 +260,88 @@ time.sleep(1)
 #Start of script!
 #Define global variables.
 def start_complete_script():
-    global latest_file
-    global match_found
-    global match_info
-    global completed_match
-    global last_used_gauntlet
-    global last_offhand
-    global main_hand
-    global session_match
-    #global should_restart
-    global t1
-    global t2
-    #should_restart=False
-    latest_file=""
-    match_found=False
-    match_info={}
-    completed_match=False
-    last_used_gauntlet=""
-    last_offhand=""
-    main_hand=""
-    #session_match=()
-    #Find a started match in the latest log file. Function is a loop that resets the latest log file
-    find_matches()
-    print ("Matches found")
-    #If matches found then find last match.
-    #latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
-    print ("Latest match:", latest_started_match)
-    #Find match start time and match start line number and add to match information list.
-    find_match_times(latest_started_match, 'Start')
-    find_match_line_in_file(latest_started_match, 'Start')
-    #Now that a match has been found, the mainhand can be determined.
-    find_main_hand(latest_started_match)
-    set_gauntlet_position()
-    #Main hand found, setting rgb codes:
-    set_rgb_codes()
-    #Start checking for mouse input and start looking for end of match.
-    t1 = Thread(target = find_completed_match)
-    t2 = Thread(target = check_mouse_input)
-    t1.start()
-    t2.start()
-    # while True:
-    #     if should_restart==False:
-    #         print ("Match has not finished yet")
-    #         time.sleep(3)
-    #     else:
-    #         print("writing json file")
-    #         should_restart==True
-    #         with open('result.json', 'w') as fp:
-    #             json.dump (match_info, fp)
-    #         break
+    global run_script
+    while run_script==True:
+        global latest_file
+        global match_found
+        global match_info
+        global completed_match
+        global last_used_gauntlet
+        global last_offhand
+        global main_hand
+        global session_match
+        #global should_restart
+        global t1
+        global t2
+        #should_restart=False
+        latest_file=""
+        match_found=False
+        match_info={}
+        completed_match=False
+        last_used_gauntlet=""
+        last_offhand=""
+        main_hand=""
+        #session_match=()
+        #Find a started match in the latest log file. Function is a loop that resets the latest log file
+        find_matches()
+        print ("Matches found")
+        #If matches found then find last match.
+        #latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
+        print ("Latest match:", latest_started_match)
+        #Find match start time and match start line number and add to match information list.
+        find_match_times(latest_started_match, 'Start')
+        find_match_line_in_file(latest_started_match, 'Start')
+        #Now that a match has been found, the mainhand can be determined.
+        find_main_hand(latest_started_match)
+        set_gauntlet_position()
+        #Main hand found, setting rgb codes:
+        set_rgb_codes()
+        #Start checking for mouse input and start looking for end of match.
+        t1 = Thread(target = find_completed_match)
+        t2 = Thread(target = check_mouse_input)
+        t1.start()
+        t2.start()
+        # while True:
+        #     if should_restart==False:
+        #         print ("Match has not finished yet")
+        #         time.sleep(3)
+        #     else:
+        #         print("writing json file")
+        #         should_restart==True
+        #         with open('result.json', 'w') as fp:
+        #             json.dump (match_info, fp)
+        #         break
     
 
+run_script=True
+def start():
+    """Enable scanning by setting the global flag to True."""
+    global session_match
+    global run_scripts
+    global start_complete_script
+    session_match=()
+    start_complete_script()
 
-# should_restart=True
-# while should_restart==True:
-#     if should_restart==True:
-#         should_restart=False
-#         start_complete_script()
-#     else:
-#         should_restart=True
+def stop():
+    """Stop scanning by setting the global flag to False."""
+    global run_script
+    run_script = False
 
-#should_restart=True   
-session_match=()
-#while should_restart==True:
-start_complete_script()
-    #time.sleep(5)
-    #continue
+
+
+
+root = Tk()
+root.title("Title")
+root.geometry("250x250")
+
+app = Frame(root)
+app.grid()
+
+start = Button(app, text="Start Scan", command=start)
+stop = Button(app, text="Stop", command=stop)
+
+start.grid()
+stop.grid()
+
+  # After 1 second, call scanning
+root.mainloop()

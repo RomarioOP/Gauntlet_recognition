@@ -14,58 +14,17 @@ import json
 import threading
 import inspect
 import ctypes
+import sys
 
 
 #To-do: read user settings 
 #Store session data in json file
 #Ensure location to look for icons is always in folder where the script runs
-#Add a "session" loop. This will enable the script to re-run when a match has been succesfully started and ended.
+#Look for match cancel
+#[2021.01.16-14.03.27:969][246]LogGameMode:Display: Match State Changed from WaitingToStart to LeavingMap !json{"pid":13380,"env":"production","ver":"2.0.10050"}
+#Create gui if needed
 
 
-
-def _async_raise(tid, exctype):
-    """raises the exception, performs cleanup if needed"""
-    if not inspect.isclass(exctype):
-        raise TypeError("Only types can be raised (not instances)")
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, ctypes.py_object(exctype))
-    if res == 0:
-        raise ValueError("invalid thread id")
-    elif res != 1:
-        # """if it returns a number greater than one, you're in trouble, 
-        # and you should call it again with exc=NULL to revert the effect"""
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, 0)
-        raise SystemError("PyThreadState_SetAsyncExc failed")
-
-
-class Thread(threading.Thread):
-    def _get_my_tid(self):
-        """determines this (self's) thread id"""
-        if not self.isAlive():
-            raise threading.ThreadError("the thread is not active")
-        
-        # do we have it cached?
-        if hasattr(self, "_thread_id"):
-            return self._thread_id
-        
-        # no, look for it in the _active dict
-        for tid, tobj in threading._active.items():
-            if tobj is self:
-                self._thread_id = tid
-                return tid
-        
-        raise AssertionError("could not determine the thread's id")
-    
-    def raise_exc(self, exctype):
-        """raises the given exception type in the context of this thread"""
-        _async_raise(self._get_my_tid(), exctype)
-    
-    def terminate(self):
-        """raises SystemExit in the context of the given thread, which should 
-        cause the thread to exit silently (unless caught)"""
-        self.raise_exc(SystemExit)
-
-
-#print (os.getenv('LOCALAPPDATA'))
 #Get latest log file
 def find_latest_log_file():
     list_of_files = glob.glob(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
@@ -90,14 +49,6 @@ def search_string_in_file(file_name, string_to_search, line_number):
             if string_to_search in line:
                 # If yes, then add the line number & line as a tuple in the list
                 list_of_results.append((line_number, line.rstrip()))
-                #print (list_of_results)
-                #match_start_line_number=line_number[(len(line_number)-1)]
-                #match_info['MatchStartLineNumber'] = match_start_line_number
-    # Return list of tuples containing line numbers and lines where string is found
-                #print("Match found. Resuming script.")
-                #global match_found
-                #match_found=True
-                #print(list_of_results)
     return list_of_results
 
 #Filter timestamp in a string based on regular expression
@@ -151,10 +102,10 @@ def gauntlet():
                 else:
                     print("Attacking with the same gauntlet as before. Skipping api call.")
 
-def terminate():
-    print("lets stop it")
-    for thread in threading.enumerate(): 
-        print(thread.name)
+# def terminate():
+#     print("lets stop it")
+#     for thread in threading.enumerate(): 
+#         print(thread.name)
 
     
 
@@ -183,7 +134,7 @@ def find_completed_match():
                 find_match_times(latest_ended_match, 'End')
                 find_match_line_in_file(latest_ended_match, 'End')
                 print (match_info)
-                print ("Session ended. Restarting new session.")
+                print ("Session ended. Starting new session.")
                 #terminate()
                 completed_match=True
                 time.sleep(5)
@@ -287,7 +238,7 @@ def set_gauntlet_position():
     global region
     with open('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
         if 'bSwapGauntletSlots=False' in f.read():
-            region=(660,900,600,100)
+            region=(1150,915,65,70)
         else:
             region=("tbd")
 
@@ -356,17 +307,5 @@ def start_complete_script():
     
 
 
-# should_restart=True
-# while should_restart==True:
-#     if should_restart==True:
-#         should_restart=False
-#         start_complete_script()
-#     else:
-#         should_restart=True
-
-#should_restart=True   
 session_match=()
-#while should_restart==True:
 start_complete_script()
-    #time.sleep(5)
-    #continue
