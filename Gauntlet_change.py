@@ -1,6 +1,7 @@
 #Manually testing gauntlet color sync when in practice lobbies since there are no log entries when you enter the practice lobby.
 #To-do gauntlet swap region
 #https://imgur.com/a/YClCDqN
+#https://imgur.com/4s6WmvX
 import win32api
 import time
 import pyautogui
@@ -10,6 +11,7 @@ from yeelight import LightType
 import glob
 import os
 main_hand="wind"
+print (main_hand)
 
 all_elements = ["wind", "toxic", "ice", "fire", "stone" ,"lightning", "noodle"]
 elements = []
@@ -70,7 +72,12 @@ while True:
                     print ("Running gauntlet function.")
                     gauntlet()
 
-    time.sleep(0.5)
+    time.sleep(0.3)
 
 
 
+try:
+    while True:
+        do_something()
+except KeyboardInterrupt:
+    pass

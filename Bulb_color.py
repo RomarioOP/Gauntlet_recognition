@@ -14,4 +14,4 @@ rgb = {
     'noodle': lambda: print (bulb.set_rgb(255,239,213))
 }
 
-rgb['fire']()
+rgb['toxic']()
