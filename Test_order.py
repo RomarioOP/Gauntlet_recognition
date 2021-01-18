@@ -10,6 +10,7 @@ from threading import Thread
 from yeelight import Bulb
 from yeelight import LightType
 import pyautogui
+import json
 
 #To-do: read user settings 
 #Store session data in json file
@@ -51,8 +52,8 @@ def search_string_in_file(file_name, string_to_search, line_number):
                 #match_info['MatchStartLineNumber'] = match_start_line_number
     # Return list of tuples containing line numbers and lines where string is found
                 #print("Match found. Resuming script.")
-                global match_found
-                match_found=True
+                #global match_found
+                #match_found=True
                 #print(list_of_results)
     return list_of_results
 
@@ -110,6 +111,7 @@ def gauntlet():
 #Check if a match has been started and finished
 def find_completed_match():
     global should_restart
+    global completed_match
     while completed_match==False:
         matched_end_lines = search_string_in_file((latest_file), 'Received the final placement for the client in the match', 0)
         if len(matched_end_lines) > 0:
@@ -129,8 +131,10 @@ def find_completed_match():
                 find_match_line_in_file(latest_ended_match, 'End')
                 print (match_info)
                 print ("Session ended. Restarting new session.")
-                time.sleep(2)
-                should_restart = True
+                time.sleep(5)
+                completed_match=True
+                should_restart=True
+ 
         else:
             time.sleep(3)
 
@@ -187,10 +191,30 @@ def set_rgb_codes():
 def find_matches():
     while match_found==False:
         global matched_start_lines
+        global latest_started_match
+        global session_match
         find_latest_log_file()
         matched_start_lines = search_string_in_file((latest_file), 'CONNECTING TO IP', 0)
         print("Looking for matches.")
-        time.sleep(1)
+        if  matched_start_lines:
+            print ("Matches found. Filtering latest match.")
+            latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
+            #print (latest_started_match)
+            print (session_match)
+            if str(latest_started_match)==str(session_match):
+                match_found==False
+                return match_found
+            else:
+                session_match=latest_started_match
+                match_found==True
+                return match_found
+            return match_found   
+        else: 
+            print ("No Matches found yet.")
+            match_found==True
+            return match_found
+            time.sleep(1)
+       
 
 #Assign the region/location of the screen that has to be looked over to find the off hand
 def set_gauntlet_position():
@@ -221,7 +245,9 @@ def start_complete_script():
     global last_used_gauntlet
     global last_offhand
     global main_hand
-
+    global session_match
+    global should_restart
+    should_restart=False
     latest_file=""
     match_found=False
     match_info={}
@@ -229,11 +255,12 @@ def start_complete_script():
     last_used_gauntlet=""
     last_offhand=""
     main_hand=""
+    session_match=()
     #Find a started match in the latest log file. Function is a loop that resets the latest log file
     find_matches()
     print ("Matches found")
     #If matches found then find last match.
-    latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
+    #latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
     print ("Latest match:", latest_started_match)
     #Find match start time and match start line number and add to match information list.
     find_match_times(latest_started_match, 'Start')
@@ -248,16 +275,28 @@ def start_complete_script():
     t2 = Thread(target = check_mouse_input)
     t1.start()
     t2.start()
-    print("setting restart to true")
-    should_restart = True
-
-
-should_restart=True
-while should_restart==True:
-    if should_restart==True:
-        should_restart=False
-        start_complete_script()
-    else:
-        should_restart=True
-
+    while True:
+        if should_restart==False:
+            print ("Match has not finished yet")
+            time.sleep(3)
+        else:
+            print("writing json file")
+            should_restart==True
+            with open('result.json', 'w') as fp:
+                json.dump (match_info, fp)
+            break
     
+
+
+# should_restart=True
+# while should_restart==True:
+#     if should_restart==True:
+#         should_restart=False
+#         start_complete_script()
+#     else:
+#         should_restart=True
+
+should_restart=True    
+while should_restart==True:
+    start_complete_script()
+    time.sleep(1)
