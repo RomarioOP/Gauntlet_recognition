@@ -67,7 +67,6 @@ def find_match_line_in_file(match, x):
     match_line_number = match_line_number.replace('(', '')
     match_info['Match'+x+'LineNumber'] = match_line_number
  
-
 #Find character class in string and assign the correct main hand element
 def find_main_hand(file_name):
     global main_hand
@@ -88,7 +87,7 @@ def find_main_hand(file_name):
         #match_info['Main_hand'] = main_hand
     print ("Main hand found: "+ main_hand)
 
-#Define which off hand gauntlet is equiped
+#Find which off hand is equipped
 def gauntlet():
         global last_offhand
         global last_used_gauntlet
@@ -108,35 +107,102 @@ def gauntlet():
 #Check if a match has been started and finished
 def find_completed_match():
     global completed_match
-    global t1
-    global t2
     while completed_match==False:
+#===============================================================================================================================#
+# Match end search  (Battleroyale mode)      
+#===============================================================================================================================#
         matched_end_lines = search_string_in_file((latest_file), 'Received the final placement for the client in the match', 0)
-        print("=========================================")
+        print("Checking for finished match")
         if len(matched_end_lines) > 0:
             latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
-            print(latest_ended_match)
+            #print(latest_ended_match)
             #Find match end time and match end line number 
             find_match_times(latest_ended_match, 'End')
             find_match_line_in_file(latest_ended_match, 'End')
             if int(match_info['MatchStartLineNumber']) > int(match_info['MatchEndLineNumber']):
-                print("Order doesn't match.")
-                print (match_info['MatchStartLineNumber'])
-                print (match_info['MatchEndLineNumber'])
-                time.sleep(3)      
+                # print("Order doesn't match.")
+                # print (match_info['MatchStartLineNumber'])
+                # print (match_info['MatchEndLineNumber'])
+                #time.sleep(3)
+                pass      
             else:
-                print("Order matches.")
-                find_match_times(latest_ended_match, 'End')
-                find_match_line_in_file(latest_ended_match, 'End')
+                #print("Order matches.")
+                #find_match_times(latest_ended_match, 'End')
+                #find_match_line_in_file(latest_ended_match, 'End')
+                match_info.pop('MatchCancel', None)
+                match_info.pop('MatchCancelLineNumber', None)
                 print (match_info)
+                with open((working_dir)+"\\Match_results\\result.log", 'a') as fp:
+                    fp.write(f'\n {match_info}')
                 print ("Session ended. Starting new session.")
                 #terminate()
                 completed_match=True
                 time.sleep(5)
                 start_complete_script()
                 return
-        else:
-            time.sleep(3)
+#===============================================================================================================================#
+# Match cancel search               
+#===============================================================================================================================#
+        matched_cancel_lines = search_string_in_file((latest_file), 'StartLoadingLevel /Game/Maps/MainMenu/MainMenu_Root', 0)
+        print("Checking canceled match")
+        if len(matched_cancel_lines) > 0:
+            latest_cancel_match=matched_cancel_lines[(len(matched_cancel_lines)-1)]
+            #print(latest_ended_match)
+            #Find match end time and match end line number 
+            find_match_times(latest_cancel_match, 'Cancel')
+            find_match_line_in_file(latest_cancel_match, 'Cancel')
+            if int(match_info['MatchStartLineNumber']) > int(match_info['MatchCancelLineNumber']):
+                # print("Order doesn't match.")
+                # print (match_info['MatchStartLineNumber'])
+                # print (match_info['MatchEndLineNumber'])
+                pass      
+            else:
+                #print("Order matches.")
+                #find_match_times(latest_ended_match, 'End')
+                #find_match_line_in_file(latest_ended_match, 'End')
+                match_info.pop('MatchEnd', None)
+                match_info.pop('MatchEndLineNumber', None)
+                print (match_info)
+                with open((working_dir)+"\\Match_results\\result.log", 'a') as fp:
+                    fp.write(f'\n {match_info}')
+                print ("Session ended. Starting new session.")
+                #terminate()
+                completed_match=True
+                time.sleep(5)
+                start_complete_script()
+                return
+#===============================================================================================================================#
+# Match end search  (Clash mode)      
+#===============================================================================================================================#
+        # matched_end_lines = search_string_in_file((latest_file), 'Starting load of match end screen', 0)
+        # print("Checking for finished match")
+        # if len(matched_end_lines) > 0:
+        #     latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
+        #     #print(latest_ended_match)
+        #     #Find match end time and match end line number 
+        #     find_match_times(latest_ended_match, 'End')
+        #     find_match_line_in_file(latest_ended_match, 'End')
+        #     if int(match_info['MatchStartLineNumber']) > int(match_info['MatchEndLineNumber']):
+        #         # print("Order doesn't match.")
+        #         # print (match_info['MatchStartLineNumber'])
+        #         # print (match_info['MatchEndLineNumber'])
+        #         #time.sleep(3)
+        #         pass      
+        #     else:
+        #         #print("Order matches.")
+        #         #find_match_times(latest_ended_match, 'End')
+        #         #find_match_line_in_file(latest_ended_match, 'End')
+        #         match_info.pop('MatchCancel', None)
+        #         match_info.pop('MatchCancelLineNumber', None)
+        #         print (match_info)
+        #         print ("Session ended. Starting new session.")
+        #         #terminate()
+        #         completed_match=True
+        #         time.sleep(5)
+        #         start_complete_script()
+        #         return
+
+        time.sleep(5)
 
 #Track mouse events
 def check_mouse_input():
@@ -208,25 +274,25 @@ def find_matches():
         if  matched_start_lines:
             print ("Matches found. Filtering latest match.")
             latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
-            print ("latest: " +str(latest_started_match))
-            print ("session: " +str(session_match))
-            print("checking if they are the same")
-            time.sleep(1)
+            # print ("latest: " +str(latest_started_match))
+            # print ("session: " +str(session_match))
+            print("Checking if this is an old match.")
+            #time.sleep(1)
             if str(latest_started_match)==str(session_match):
-                print("Old match, restarting function")
-                time.sleep(1)
+                print("Old match, restarting function.")
+                time.sleep(5)
                 continue
             else:
-                print("this is a new match")
+                print("New match detected")
                 session_match=(latest_started_match)
-                print(session_match)
+                # print(session_match)
                 match_found==True
                 #Not sure if return below is required. Further testing needed
                 return session_match
             continue 
         else: 
             print ("No Matches found yet.")
-            time.sleep(1)
+            time.sleep(3)
             continue
        
 #Assign the region/location of the screen that has to be looked over to find the off hand
@@ -287,16 +353,7 @@ def start_complete_script():
     t2 = Thread(target = check_mouse_input)
     t1.start()
     t2.start()
-    # while True:
-    #     if should_restart==False:
-    #         print ("Match has not finished yet")
-    #         time.sleep(3)
-    #     else:
-    #         print("writing json file")
-    #         should_restart==True
-    #         with open('result.json', 'w') as fp:
-    #             json.dump (match_info, fp)
-    #         break
+
     
 global working_dir
 working_dir=str(pathlib.Path(__file__).parent.absolute())
