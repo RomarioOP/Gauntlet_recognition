@@ -27,6 +27,23 @@ import pathlib
 #[2021.01.16-14.03.27:969][246]LogGameMode:Display: Match State Changed from WaitingToStart to LeavingMap !json{"pid":13380,"env":"production","ver":"2.0.10050"}
 #Create gui if needed
 
+import asyncio
+import simpleobsws
+
+loop = asyncio.get_event_loop()
+ws = simpleobsws.obsws(host='127.0.0.1', port=4444, password='MYSecurePassword', loop=loop) # Every possible argument has been passed, but none are required. See lib code for defaults.
+
+async def make_request(element):
+    await ws.connect() # Make the connection to OBS-Websocket
+    result = await ws.call('GetVersion') # We get the current OBS version. More request data is not required
+    print(result) # Print the raw json output of the GetVersion request
+    await asyncio.sleep(0.1)
+    data = {'scene-name': element}
+    result = await ws.call('SetCurrentScene', data) # Make a request with the given data
+    print(result)
+    await ws.disconnect() # Clean things up by disconnecting. Only really required in a few specific situations, but good practice if you are done making requests or listening to events.
+
+
 #Get latest log file
 def find_latest_log_file():
     list_of_files = glob.glob(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Logs\\*') # * means all if need specific format then *.csv
@@ -181,13 +198,13 @@ def set_rgb_codes():
     global rgb
     bulb = Bulb("192.168.178.15")
     rgb = {
-        'fire': lambda: print (bulb.set_rgb(255,0,0)),
-        'toxic': lambda: print (bulb.set_rgb(0,255,0)),
-        'ice': lambda: print (bulb.set_rgb(0,0,255)),
-        'wind': lambda: print (bulb.set_rgb(255,255,0)),
-        'lightning': lambda: print (bulb.set_rgb(127,0,255)),
-        'stone': lambda: print (bulb.set_rgb(153,76,8)),
-        'noodle': lambda: print (bulb.set_rgb(255,20,147))
+        'fire': lambda: print (loop.run_until_complete(make_request('fire'))),
+        'toxic': lambda: print (loop.run_until_complete(make_request('toxic'))),
+        'ice': lambda: print (loop.run_until_complete(make_request('ice'))),
+        'wind': lambda: print (loop.run_until_complete(make_request('wind'))),
+        'lightning': lambda: print (loop.run_until_complete(make_request('lightning'))),
+        'stone': lambda: print (loop.run_until_complete(make_request('stone'))),
+        'noodle': lambda: print (loop.run_until_complete(make_request('noodle')))
     }
     all_elements = ["wind", "toxic", "ice", "fire", "stone" ,"lightning", "noodle"]
     global elements
