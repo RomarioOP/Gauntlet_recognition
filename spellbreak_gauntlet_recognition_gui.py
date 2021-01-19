@@ -20,15 +20,24 @@ import _tkinter
 from tkinter import *
 from _tkinter import *
 from subprocess import Popen
+import pyautogui
+import json
+import threading
+import inspect
+import ctypes
+import sys
+import pathlib
 
 #https://stackoverflow.com/questions/27050492/how-do-you-create-a-tkinter-gui-stop-button-to-break-an-infinite-loop
-#To-do: read user settings 
+#https://stackoverflow.com/questions/3430372/how-do-i-get-the-full-path-of-the-current-files-directory
+#https://imgur.com/a/SiqFu6S
 #Store session data in json file
-#Ensure location to look for icons is always in folder where the script runs
 #Look for match cancel
+#change look for match string to LogLoad: LogLoad: LoadMap: 23.109.51.20:8570
+
+#Look for clash end of match
 #[2021.01.16-14.03.27:969][246]LogGameMode:Display: Match State Changed from WaitingToStart to LeavingMap !json{"pid":13380,"env":"production","ver":"2.0.10050"}
 #Create gui if needed
-
 
 #Get latest log file
 def find_latest_log_file():
@@ -46,7 +55,7 @@ def search_string_in_file(file_name, string_to_search, line_number):
     global list_of_results
     list_of_results = []
     # Open the file in read only mode
-    with open(file_name, 'r') as read_obj:
+    with open(file_name, 'r',encoding='UTF8') as read_obj:
         # Read all lines in the file one by one
         for line in read_obj:
             # For each line, check if line contains the string
@@ -68,10 +77,8 @@ def find_match_line_in_file(match, x):
     match_line_number=''.join(regex_match_line_number)
     match_line_number = match_line_number.replace(',', '')
     match_line_number = match_line_number.replace('(', '')
-
     match_info['Match'+x+'LineNumber'] = match_line_number
-    #print (match_info)
-
+ 
 #Find character class in string and assign the correct main hand element
 def find_main_hand(file_name):
     global main_hand
@@ -92,13 +99,15 @@ def find_main_hand(file_name):
         #match_info['Main_hand'] = main_hand
     print ("Main hand found: "+ main_hand)
 
-#Define which off hand gauntlet is equiped
+#Find which off hand is equipped
 def gauntlet():
         global last_offhand
         global last_used_gauntlet
         global main_hand
+        global working_dir
         for i in elements:
-            if pyautogui.locateOnScreen("H:\\Documents\\Programming\\Spellbreak\\Elements\\"+(i)+".png", region=(region), grayscale=True, confidence=0.8) != None:
+            if pyautogui.locateOnScreen((working_dir)+"\\Elements\\"+(i)+".png", region=(region), grayscale=True, confidence=0.8) != None:
+            #if pyautogui.locateOnScreen("H:\\Documents\\Programming\\Spellbreak\\Elements\\"+(i)+".png", region=(region), grayscale=True, confidence=0.8) != None:
                 if last_offhand != i or last_offhand != last_used_gauntlet:
                     print("Switched from "+(last_offhand)+" to "+(i))                
                     rgb[(i)]()
@@ -107,77 +116,142 @@ def gauntlet():
                 else:
                     print("Attacking with the same gauntlet as before. Skipping api call.")
 
-# def terminate():
-#     print("lets stop it")
-#     for thread in threading.enumerate(): 
-#         print(thread.name)
-
-    
-
 #Check if a match has been started and finished
 def find_completed_match():
-    #global should_restart
     global completed_match
-    global t1
-    global t2
     while completed_match==False:
+#===============================================================================================================================#
+# Match end search  (Battleroyale mode)      
+#===============================================================================================================================#
         matched_end_lines = search_string_in_file((latest_file), 'Received the final placement for the client in the match', 0)
-        print("=========================================")
+        print("Checking for finished match")
         if len(matched_end_lines) > 0:
             latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
-            print(latest_ended_match)
+            #print(latest_ended_match)
             #Find match end time and match end line number 
             find_match_times(latest_ended_match, 'End')
             find_match_line_in_file(latest_ended_match, 'End')
             if int(match_info['MatchStartLineNumber']) > int(match_info['MatchEndLineNumber']):
-                print("Order doesn't match.")
-                print (match_info['MatchStartLineNumber'])
-                print (match_info['MatchEndLineNumber'])
-                time.sleep(3)      
+                # print("Order doesn't match.")
+                # print (match_info['MatchStartLineNumber'])
+                # print (match_info['MatchEndLineNumber'])
+                #time.sleep(3)
+                pass      
             else:
-                print("Order matches.")
-                find_match_times(latest_ended_match, 'End')
-                find_match_line_in_file(latest_ended_match, 'End')
+                #print("Order matches.")
+                #find_match_times(latest_ended_match, 'End')
+                #find_match_line_in_file(latest_ended_match, 'End')
+                match_info.pop('MatchCancel', None)
+                match_info.pop('MatchCancelLineNumber', None)
                 print (match_info)
+                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
+                    fp.write(f'\n {match_info}')
                 print ("Session ended. Starting new session.")
                 #terminate()
                 completed_match=True
                 time.sleep(5)
                 start_complete_script()
                 return
-                
-                #should_restart=True
-        else:
-            time.sleep(3)
+#===============================================================================================================================#
+# Match cancel search               
+#===============================================================================================================================#
+        matched_cancel_lines = search_string_in_file((latest_file), 'StartLoadingLevel /Game/Maps/MainMenu/MainMenu_Root', 0)
+        print("Checking canceled match")
+        if len(matched_cancel_lines) > 0:
+            latest_cancel_match=matched_cancel_lines[(len(matched_cancel_lines)-1)]
+            #print(latest_ended_match)
+            #Find match end time and match end line number 
+            find_match_times(latest_cancel_match, 'Cancel')
+            find_match_line_in_file(latest_cancel_match, 'Cancel')
+            if int(match_info['MatchStartLineNumber']) > int(match_info['MatchCancelLineNumber']):
+                # print("Order doesn't match.")
+                # print (match_info['MatchStartLineNumber'])
+                # print (match_info['MatchEndLineNumber'])
+                pass      
+            else:
+                #print("Order matches.")
+                #find_match_times(latest_ended_match, 'End')
+                #find_match_line_in_file(latest_ended_match, 'End')
+                match_info.pop('MatchEnd', None)
+                match_info.pop('MatchEndLineNumber', None)
+                print (match_info)
+                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
+                    fp.write(f'\n {match_info}')
+                print ("Session ended. Starting new session.")
+                #terminate()
+                completed_match=True
+                time.sleep(5)
+                start_complete_script()
+                return
+#===============================================================================================================================#
+# Match end search  (Clash mode)      
+#===============================================================================================================================#
+        # matched_end_lines = search_string_in_file((latest_file), 'Starting load of match end screen', 0)
+        # print("Checking for finished match")
+        # if len(matched_end_lines) > 0:
+        #     latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
+        #     #print(latest_ended_match)
+        #     #Find match end time and match end line number 
+        #     find_match_times(latest_ended_match, 'End')
+        #     find_match_line_in_file(latest_ended_match, 'End')
+        #     if int(match_info['MatchStartLineNumber']) > int(match_info['MatchEndLineNumber']):
+        #         # print("Order doesn't match.")
+        #         # print (match_info['MatchStartLineNumber'])
+        #         # print (match_info['MatchEndLineNumber'])
+        #         #time.sleep(3)
+        #         pass      
+        #     else:
+        #         #print("Order matches.")
+        #         #find_match_times(latest_ended_match, 'End')
+        #         #find_match_line_in_file(latest_ended_match, 'End')
+        #         match_info.pop('MatchCancel', None)
+        #         match_info.pop('MatchCancelLineNumber', None)
+        #         print (match_info)
+        #         print ("Session ended. Starting new session.")
+        #         #terminate()
+        #         completed_match=True
+        #         time.sleep(5)
+        #         start_complete_script()
+        #         return
+
+        time.sleep(5)
 
 #Track mouse events
 def check_mouse_input():
-    #global completed_match
     global last_used_gauntlet
     global main_hand
     while completed_match==False:
         for i in range(1, 256):
             if win32api.GetAsyncKeyState(i):
                 if i in special_keys:
-                    ### Main hand code
-                    if i == 1:
-                        print ("Attacking with main hand.")
-                        if last_used_gauntlet==main_hand:
-                            print("Light is already set to main hand settings. Skipping api call.")
-                        else:
-                            print("Activating color change.")
-                            rgb[(main_hand)]()
-                            last_used_gauntlet=main_hand
-                    ### End main hand code
-                    elif i == 2:
-                        print ("Attacking with off hand.")
-                        print ("Running gauntlet function.")
-                        gauntlet()
+                    if gauntlet_swap==False:
+                        if i == 1:
+                            print ("Attacking with main hand.")
+                            if last_used_gauntlet==main_hand:
+                                print("Light is already set to main hand settings. Skipping api call.")
+                            else:
+                                print("Activating color change.")
+                                rgb[(main_hand)]()
+                                last_used_gauntlet=main_hand
+                        elif i == 2:
+                            print ("Attacking with off hand.")
+                            print ("Running gauntlet function.")
+                            gauntlet()
+                    else:
+                        if i == 2:
+                            print ("Attacking with main hand.")
+                            if last_used_gauntlet==main_hand:
+                                print("Light is already set to main hand settings. Skipping api call.")
+                            else:
+                                print("Activating color change.")
+                                rgb[(main_hand)]()
+                                last_used_gauntlet=main_hand
+                        elif i == 1:
+                            print ("Attacking with off hand.")
+                            print ("Running gauntlet function.")
+                            gauntlet()                    
         time.sleep(0.3)
-    
         
-
-
 #Set rgb color codes
 def set_rgb_codes():
     global main_hand
@@ -200,7 +274,6 @@ def set_rgb_codes():
         elements.append(i)
     elements.remove(main_hand)
     
-   
 #Check if a matches have been found
 def find_matches():
     while match_found==False:
@@ -213,112 +286,101 @@ def find_matches():
         if  matched_start_lines:
             print ("Matches found. Filtering latest match.")
             latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
-            print ("latest: " +str(latest_started_match))
-            print ("session: " +str(session_match))
-            print("checking if they are the same")
-            time.sleep(1)
+            # print ("latest: " +str(latest_started_match))
+            # print ("session: " +str(session_match))
+            print("Checking if this is an old match.")
+            #time.sleep(1)
             if str(latest_started_match)==str(session_match):
-                print("Old match, restarting function")
-                time.sleep(1)
+                print("Old match, restarting function.")
+                time.sleep(5)
                 continue
-                #return match_found
             else:
-                print("this is a new match")
+                print("New match detected")
                 session_match=(latest_started_match)
-                print(session_match)
+                # print(session_match)
                 match_found==True
-                #time.sleep(5)
+                #Not sure if return below is required. Further testing needed
                 return session_match
-                #return match_found
-            #return match_found  
             continue 
         else: 
             print ("No Matches found yet.")
-            time.sleep(1)
+            time.sleep(3)
             continue
        
-
 #Assign the region/location of the screen that has to be looked over to find the off hand
 def set_gauntlet_position():
     global region
-    with open('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
+    global gauntlet_swap
+    #with open('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
+    with open(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
         if 'bSwapGauntletSlots=False' in f.read():
-            region=(660,900,600,100)
+            region=(1150,915,65,70)
+            gauntlet_swap=False
         else:
-            region=("tbd")
+            region=(700,915,65,70)
+            gauntlet_swap=True
 
 #Set Special keys
-#To-do: get this info from ini file
-global special_keys
-special_keys = [0x01, 0x02]
-special = {0x01: 'leftClick',
-           0x02: 'rightClick',}
-time.sleep(1)
-
-
-
-#Start of script!
-#Define global variables.
+def set_special_keys():
+    global special_keys
+    special_keys = [0x01, 0x02]
+    special = {0x01: 'leftClick', 0x02: 'rightClick',}
+    time.sleep(1)
+   
+#Full code execution!
 def start_complete_script():
-    global run_script
-    while run_script==True:
-        global latest_file
-        global match_found
-        global match_info
-        global completed_match
-        global last_used_gauntlet
-        global last_offhand
-        global main_hand
-        global session_match
-        #global should_restart
-        global t1
-        global t2
-        #should_restart=False
-        latest_file=""
-        match_found=False
-        match_info={}
-        completed_match=False
-        last_used_gauntlet=""
-        last_offhand=""
-        main_hand=""
-        #session_match=()
-        #Find a started match in the latest log file. Function is a loop that resets the latest log file
-        find_matches()
-        print ("Matches found")
-        #If matches found then find last match.
-        #latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
-        print ("Latest match:", latest_started_match)
-        #Find match start time and match start line number and add to match information list.
-        find_match_times(latest_started_match, 'Start')
-        find_match_line_in_file(latest_started_match, 'Start')
-        #Now that a match has been found, the mainhand can be determined.
-        find_main_hand(latest_started_match)
-        set_gauntlet_position()
-        #Main hand found, setting rgb codes:
-        set_rgb_codes()
-        #Start checking for mouse input and start looking for end of match.
-        t1 = Thread(target = find_completed_match)
-        t2 = Thread(target = check_mouse_input)
-        t1.start()
-        t2.start()
-        # while True:
-        #     if should_restart==False:
-        #         print ("Match has not finished yet")
-        #         time.sleep(3)
-        #     else:
-        #         print("writing json file")
-        #         should_restart==True
-        #         with open('result.json', 'w') as fp:
-        #             json.dump (match_info, fp)
-        #         break
+    global latest_file
+    global match_found
+    global match_info
+    global completed_match
+    global last_used_gauntlet
+    global last_offhand
+    global main_hand
+    global session_match
+    global t1
+    global t2
+    latest_file=""
+    match_found=False
+    match_info={}
+    completed_match=False
+    last_used_gauntlet=""
+    last_offhand=""
+    main_hand=""
+    #Find a started match in the latest log file. Function is a loop that resets the latest log file
+    find_matches()
+    print ("Matches found")
+    #If matches found then find last match.
+    print ("Latest match:", latest_started_match)
+    #Find match start time and match start line number and add to match information list.
+    find_match_times(latest_started_match, 'Start')
+    find_match_line_in_file(latest_started_match, 'Start')
+    #Now that a match has been found, the mainhand can be determined.
+    find_main_hand(latest_started_match)
+    set_gauntlet_position()
+    set_special_keys()
+    #Main hand found, setting rgb codes:
+    set_rgb_codes()
+    #Start checking for mouse input and start looking for end of match.
+    t1 = Thread(target = find_completed_match)
+    t2 = Thread(target = check_mouse_input)
+    t1.start()
+    t2.start()
+
+    
+# global working_dir
+# working_dir=str(pathlib.Path(__file__).parent.absolute())
+# session_match=()
+# start_complete_script()
     
 
 run_script=True
 def start():
     """Enable scanning by setting the global flag to True."""
     global session_match
-    global run_scripts
+    global run_script
     global start_complete_script
+    global working_dir
+    working_dir=str(pathlib.Path(__file__).parent.absolute())
     session_match=()
     start_complete_script()
 
@@ -327,8 +389,12 @@ def stop():
     global run_script
     run_script = False
 
+def pause():
+    global completed_match
+    completed_match==True    
 
-
+def reset_gauntlet_position():
+    set_gauntlet_position()
 
 root = Tk()
 root.title("Title")
@@ -339,9 +405,13 @@ app.grid()
 
 start = Button(app, text="Start Scan", command=start)
 stop = Button(app, text="Stop", command=stop)
+pause = Button(app, text="Pause", command=pause)
+reset_gauntlet_position = Button(app, text="Reset gauntlet position", command=reset_gauntlet_position)
 
 start.grid()
 stop.grid()
+pause.grid()
+reset_gauntlet_position.grid()
 
   # After 1 second, call scanning
 root.mainloop()

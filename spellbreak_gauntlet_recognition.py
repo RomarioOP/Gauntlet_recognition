@@ -18,7 +18,7 @@ import sys
 import pathlib
 #https://stackoverflow.com/questions/27050492/how-do-you-create-a-tkinter-gui-stop-button-to-break-an-infinite-loop
 #https://stackoverflow.com/questions/3430372/how-do-i-get-the-full-path-of-the-current-files-directory
-
+#https://imgur.com/a/SiqFu6S
 #Store session data in json file
 #Look for match cancel
 #change look for match string to LogLoad: LogLoad: LoadMap: 23.109.51.20:8570
@@ -132,7 +132,7 @@ def find_completed_match():
                 match_info.pop('MatchCancel', None)
                 match_info.pop('MatchCancelLineNumber', None)
                 print (match_info)
-                with open((working_dir)+"\\Match_results\\result.log", 'a') as fp:
+                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
                     fp.write(f'\n {match_info}')
                 print ("Session ended. Starting new session.")
                 #terminate()
@@ -163,7 +163,7 @@ def find_completed_match():
                 match_info.pop('MatchEnd', None)
                 match_info.pop('MatchEndLineNumber', None)
                 print (match_info)
-                with open((working_dir)+"\\Match_results\\result.log", 'a') as fp:
+                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
                     fp.write(f'\n {match_info}')
                 print ("Session ended. Starting new session.")
                 #terminate()
