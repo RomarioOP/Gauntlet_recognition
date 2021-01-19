@@ -19,5 +19,7 @@ Limitations:
 - Sorceries are not supported yet. I will try to add this but it will most likely also have some limitations due to sorcery cooldowns.
 
 - Most gauntlets have a decently long ending animation. As a matter of fact, only wind is fast. 
-  If you use for instance fire gauntlet and try to attack with any other gauntlet before the fire drawback animation has finished, it will still see this as a mouse click thus it will call the api.
+  If you use for instance fire gauntlet and try to attack with any other gauntlet before the fire drawback animation has finished, it will still see this as a mouse  click thus it will call the api.
   This is something I can't fix. It can be slighly mitigated by adding a short time out after a mouse click has been detected and processed.
+  
+- Noodle is not always recognized. This is because the noodle icon is slightly transluscent. Hardly ever happens though and majority of the time user will have an offhand anyway. Thus I'm not gonna bother trying to get recognition to 100% for noodle  
