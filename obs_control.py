@@ -16,8 +16,10 @@ import inspect
 import ctypes
 import sys
 import pathlib
+from virtual_keystroke import *
 #https://stackoverflow.com/questions/27050492/how-do-you-create-a-tkinter-gui-stop-button-to-break-an-infinite-loop
 #https://stackoverflow.com/questions/3430372/how-do-i-get-the-full-path-of-the-current-files-directory
+#https://imgur.com/a/7lb3wGf
 
 #Store session data in json file
 #Look for match cancel
@@ -198,9 +200,9 @@ def set_rgb_codes():
     global rgb
     bulb = Bulb("192.168.178.15")
     rgb = {
-        'fire': lambda: print (loop.run_until_complete(make_request('fire'))),
-        'toxic': lambda: print (loop.run_until_complete(make_request('toxic'))),
-        'ice': lambda: print (loop.run_until_complete(make_request('ice'))),
+        'fire': lambda: print (pressHoldRelease("alt", "p")),
+        'toxic': lambda: print (pressHoldRelease("alt", "i")),
+        'ice': lambda: print (pressHoldRelease("alt", "o")),
         'wind': lambda: print (loop.run_until_complete(make_request('wind'))),
         'lightning': lambda: print (loop.run_until_complete(make_request('lightning'))),
         'stone': lambda: print (loop.run_until_complete(make_request('stone'))),

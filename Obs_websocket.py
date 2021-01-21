@@ -17,5 +17,5 @@ async def make_request(element):
     print(result)
     await ws.disconnect() # Clean things up by disconnecting. Only really required in a few specific situations, but good practice if you are done making requests or listening to events.
 
-loop.run_until_complete(make_request('fire'))
+loop.run_until_complete(make_request('wind'))
 #make_request()
