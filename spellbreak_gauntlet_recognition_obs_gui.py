@@ -260,7 +260,7 @@ def find_matches():
         global latest_started_match
         global session_match
         find_latest_log_file()
-        matched_start_lines = search_string_in_file((latest_file), 'CONNECTING TO IP', 0)
+        matched_start_lines = search_string_in_file((latest_file), 'LoadMap: /Game/Maps/Longshot/Practice', 0)
         print("Looking for matches.")
         if  matched_start_lines:
             print ("Matches found. Filtering latest match.")
