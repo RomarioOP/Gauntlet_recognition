@@ -1,0 +1,1 @@
+python.exe ./spellbreak_gauntlet_recognition_gui.py

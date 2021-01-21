@@ -2,13 +2,9 @@ import glob
 import os
 from datetime import datetime
 import time
-import datetime
 import re
-import win32api
 from multiprocessing import Process
 from threading import Thread
-from yeelight import Bulb
-from yeelight import LightType
 import pyautogui
 import json
 import threading
@@ -16,6 +12,14 @@ import inspect
 import ctypes
 import sys
 import pathlib
+import win32api
+import Yeelight_control
+import Obs_hotkeys
+import tkinter
+import _tkinter
+from tkinter import *
+from _tkinter import *
+from subprocess import Popen
 #https://stackoverflow.com/questions/27050492/how-do-you-create-a-tkinter-gui-stop-button-to-break-an-infinite-loop
 #https://stackoverflow.com/questions/3430372/how-do-i-get-the-full-path-of-the-current-files-directory
 #https://imgur.com/a/SiqFu6S
@@ -98,7 +102,7 @@ def gauntlet():
             #if pyautogui.locateOnScreen("H:\\Documents\\Programming\\Spellbreak\\Elements\\"+(i)+".png", region=(region), grayscale=True, confidence=0.8) != None:
                 if last_offhand != i or last_offhand != last_used_gauntlet:
                     print("Switched from "+(last_offhand)+" to "+(i))                
-                    rgb[(i)]()
+                    Yeelight_control.gauntlets[(i)]()
                     last_offhand=(i)
                     last_used_gauntlet=(i)
                 else:
@@ -219,7 +223,7 @@ def check_mouse_input():
                                 print("Light is already set to main hand settings. Skipping api call.")
                             else:
                                 print("Activating color change.")
-                                rgb[(main_hand)]()
+                                Yeelight_control.gauntlets[(main_hand)]()
                                 last_used_gauntlet=main_hand
                         elif i == 2:
                             print ("Attacking with off hand.")
@@ -232,31 +236,18 @@ def check_mouse_input():
                                 print("Light is already set to main hand settings. Skipping api call.")
                             else:
                                 print("Activating color change.")
-                                rgb[(main_hand)]()
+                                Yeelight_control.gauntlets[(main_hand)]()
                                 last_used_gauntlet=main_hand
                         elif i == 1:
                             print ("Attacking with off hand.")
                             print ("Running gauntlet function.")
                             gauntlet()                    
-        time.sleep(0.3)
-        
-#Set rgb color codes
-def set_rgb_codes():
-    global main_hand
-    global bulb
-    global rgb
-    bulb = Bulb("192.168.178.15")
-    rgb = {
-        'fire': lambda: print (bulb.set_rgb(255,0,0)),
-        'toxic': lambda: print (bulb.set_rgb(0,255,0)),
-        'ice': lambda: print (bulb.set_rgb(0,0,255)),
-        'wind': lambda: print (bulb.set_rgb(255,255,0)),
-        'lightning': lambda: print (bulb.set_rgb(127,0,255)),
-        'stone': lambda: print (bulb.set_rgb(153,76,8)),
-        'noodle': lambda: print (bulb.set_rgb(255,20,147))
-    }
+        time.sleep(0.3)       
+
+def set_elements():
     all_elements = ["wind", "toxic", "ice", "fire", "stone" ,"lightning", "noodle"]
     global elements
+    global main_hand
     elements = []
     for i in all_elements:
         elements.append(i)
@@ -327,6 +318,7 @@ def start_complete_script():
     global session_match
     global t1
     global t2
+    global elements
     latest_file=""
     match_found=False
     match_info={}
@@ -344,17 +336,17 @@ def start_complete_script():
     find_match_line_in_file(latest_started_match, 'Start')
     #Now that a match has been found, the mainhand can be determined.
     find_main_hand(latest_started_match)
+    set_elements()
     set_gauntlet_position()
     set_special_keys()
     #Main hand found, setting rgb codes:
-    set_rgb_codes()
+    Yeelight_control.set_element_color_codes()
     #Start checking for mouse input and start looking for end of match.
     t1 = Thread(target = find_completed_match)
     t2 = Thread(target = check_mouse_input)
     t1.start()
     t2.start()
 
-    
 global working_dir
 working_dir=str(pathlib.Path(__file__).parent.absolute())
 session_match=()

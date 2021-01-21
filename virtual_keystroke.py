@@ -1,6 +1,6 @@
 import win32api
-import time
 import win32con
+import time
 #http://www.kbdedit.com/manual/low_level_vk_list.html
 #https://gist.github.com/chriskiehl/2906125#file-vitual-keystroke-example
 #Giant dictonary to hold key name and VK value
