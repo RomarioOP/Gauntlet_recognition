@@ -102,7 +102,7 @@ def gauntlet():
             #if pyautogui.locateOnScreen("H:\\Documents\\Programming\\Spellbreak\\Elements\\"+(i)+".png", region=(region), grayscale=True, confidence=0.8) != None:
                 if last_offhand != i or last_offhand != last_used_gauntlet:
                     print("Switched from "+(last_offhand)+" to "+(i))                
-                    Yeelight_control.gauntlets[(i)]()
+                    Obs_hotkeys.gauntlets[(i)]()
                     last_offhand=(i)
                     last_used_gauntlet=(i)
                 else:
@@ -223,7 +223,7 @@ def check_mouse_input():
                                 print("Light is already set to main hand settings. Skipping api call.")
                             else:
                                 print("Activating color change.")
-                                Yeelight_control.gauntlets[(main_hand)]()
+                                Obs_hotkeys.gauntlets[(main_hand)]()
                                 last_used_gauntlet=main_hand
                         elif i == 2:
                             print ("Attacking with off hand.")
@@ -235,14 +235,14 @@ def check_mouse_input():
                             if last_used_gauntlet==main_hand:
                                 print("Light is already set to main hand settings. Skipping api call.")
                             else:
-                                print("Activating color change.")
-                                Yeelight_control.gauntlets[(main_hand)]()
+                                print("Activating color change.")  
+                                Obs_hotkeys.gauntlets[(main_hand)]()
                                 last_used_gauntlet=main_hand
                         elif i == 1:
                             print ("Attacking with off hand.")
                             print ("Running gauntlet function.")
                             gauntlet()                    
-        time.sleep(0.3)       
+        time.sleep(0.3)
 
 def set_elements():
     all_elements = ["wind", "toxic", "ice", "fire", "stone" ,"lightning", "noodle"]
@@ -340,34 +340,14 @@ def start_complete_script():
     set_gauntlet_position()
     set_special_keys()
     #Main hand found, setting rgb codes:
-    Yeelight_control.set_element_color_codes()
+    Obs_hotkeys.set_element_hotkeys()
     #Start checking for mouse input and start looking for end of match.
     t1 = Thread(target = find_completed_match)
     t2 = Thread(target = check_mouse_input)
     t1.start()
     t2.start()
-
-def start():
-    global session_match
-    global start_complete_script
-    global working_dir
-    working_dir=str(pathlib.Path(__file__).parent.absolute())
-    session_match=()
-    start_complete_script()
-  
-def reset_gauntlet_position():
-    set_gauntlet_position()
-
-root = Tk()
-root.title("Gauntlet tracker")
-root.geometry("250x250")
-
-app = Frame(root)
-app.grid()
-
-start = Button(app, text="Start tracking", command=start)
-reset_gauntlet_position = Button(app, text="Reset gauntlet position", command=reset_gauntlet_position)
-
-start.grid()
-reset_gauntlet_position.grid()
-root.mainloop()
+    
+global working_dir
+working_dir=str(pathlib.Path(__file__).parent.absolute())
+session_match=()
+start_complete_script()

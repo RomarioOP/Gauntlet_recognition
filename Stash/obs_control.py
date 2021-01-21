@@ -2,9 +2,13 @@ import glob
 import os
 from datetime import datetime
 import time
+import datetime
 import re
+import win32api
 from multiprocessing import Process
 from threading import Thread
+from yeelight import Bulb
+from yeelight import LightType
 import pyautogui
 import json
 import threading
@@ -12,17 +16,11 @@ import inspect
 import ctypes
 import sys
 import pathlib
-import win32api
-import Yeelight_control
-import Obs_hotkeys
-import tkinter
-import _tkinter
-from tkinter import *
-from _tkinter import *
-from subprocess import Popen
+from virtual_keystroke import *
 #https://stackoverflow.com/questions/27050492/how-do-you-create-a-tkinter-gui-stop-button-to-break-an-infinite-loop
 #https://stackoverflow.com/questions/3430372/how-do-i-get-the-full-path-of-the-current-files-directory
-#https://imgur.com/a/SiqFu6S
+#https://imgur.com/a/7lb3wGf
+
 #Store session data in json file
 #Look for match cancel
 #change look for match string to LogLoad: LogLoad: LoadMap: 23.109.51.20:8570
@@ -30,6 +28,23 @@ from subprocess import Popen
 #Look for clash end of match
 #[2021.01.16-14.03.27:969][246]LogGameMode:Display: Match State Changed from WaitingToStart to LeavingMap !json{"pid":13380,"env":"production","ver":"2.0.10050"}
 #Create gui if needed
+
+import asyncio
+import simpleobsws
+
+loop = asyncio.get_event_loop()
+ws = simpleobsws.obsws(host='127.0.0.1', port=4444, password='MYSecurePassword', loop=loop) # Every possible argument has been passed, but none are required. See lib code for defaults.
+
+async def make_request(element):
+    await ws.connect() # Make the connection to OBS-Websocket
+    result = await ws.call('GetVersion') # We get the current OBS version. More request data is not required
+    print(result) # Print the raw json output of the GetVersion request
+    await asyncio.sleep(0.1)
+    data = {'scene-name': element}
+    result = await ws.call('SetCurrentScene', data) # Make a request with the given data
+    print(result)
+    await ws.disconnect() # Clean things up by disconnecting. Only really required in a few specific situations, but good practice if you are done making requests or listening to events.
+
 
 #Get latest log file
 def find_latest_log_file():
@@ -71,6 +86,7 @@ def find_match_line_in_file(match, x):
     match_line_number = match_line_number.replace('(', '')
     match_info['Match'+x+'LineNumber'] = match_line_number
  
+
 #Find character class in string and assign the correct main hand element
 def find_main_hand(file_name):
     global main_hand
@@ -91,7 +107,7 @@ def find_main_hand(file_name):
         #match_info['Main_hand'] = main_hand
     print ("Main hand found: "+ main_hand)
 
-#Find which off hand is equipped
+#Define which off hand gauntlet is equiped
 def gauntlet():
         global last_offhand
         global last_used_gauntlet
@@ -102,7 +118,7 @@ def gauntlet():
             #if pyautogui.locateOnScreen("H:\\Documents\\Programming\\Spellbreak\\Elements\\"+(i)+".png", region=(region), grayscale=True, confidence=0.8) != None:
                 if last_offhand != i or last_offhand != last_used_gauntlet:
                     print("Switched from "+(last_offhand)+" to "+(i))                
-                    Yeelight_control.gauntlets[(i)]()
+                    rgb[(i)]()
                     last_offhand=(i)
                     last_used_gauntlet=(i)
                 else:
@@ -111,102 +127,35 @@ def gauntlet():
 #Check if a match has been started and finished
 def find_completed_match():
     global completed_match
+    global t1
+    global t2
     while completed_match==False:
-#===============================================================================================================================#
-# Match end search  (Battleroyale mode)      
-#===============================================================================================================================#
         matched_end_lines = search_string_in_file((latest_file), 'Received the final placement for the client in the match', 0)
-        print("Checking for finished match")
+        print("=========================================")
         if len(matched_end_lines) > 0:
             latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
-            #print(latest_ended_match)
+            print(latest_ended_match)
             #Find match end time and match end line number 
             find_match_times(latest_ended_match, 'End')
             find_match_line_in_file(latest_ended_match, 'End')
             if int(match_info['MatchStartLineNumber']) > int(match_info['MatchEndLineNumber']):
-                # print("Order doesn't match.")
-                # print (match_info['MatchStartLineNumber'])
-                # print (match_info['MatchEndLineNumber'])
-                #time.sleep(3)
-                pass      
+                print("Order doesn't match.")
+                print (match_info['MatchStartLineNumber'])
+                print (match_info['MatchEndLineNumber'])
+                time.sleep(3)      
             else:
-                #print("Order matches.")
-                #find_match_times(latest_ended_match, 'End')
-                #find_match_line_in_file(latest_ended_match, 'End')
-                match_info.pop('MatchCancel', None)
-                match_info.pop('MatchCancelLineNumber', None)
+                print("Order matches.")
+                find_match_times(latest_ended_match, 'End')
+                find_match_line_in_file(latest_ended_match, 'End')
                 print (match_info)
-                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
-                    fp.write(f'\n {match_info}')
                 print ("Session ended. Starting new session.")
                 #terminate()
                 completed_match=True
                 time.sleep(5)
                 start_complete_script()
                 return
-#===============================================================================================================================#
-# Match cancel search               
-#===============================================================================================================================#
-        matched_cancel_lines = search_string_in_file((latest_file), 'StartLoadingLevel /Game/Maps/MainMenu/MainMenu_Root', 0)
-        print("Checking canceled match")
-        if len(matched_cancel_lines) > 0:
-            latest_cancel_match=matched_cancel_lines[(len(matched_cancel_lines)-1)]
-            #print(latest_ended_match)
-            #Find match end time and match end line number 
-            find_match_times(latest_cancel_match, 'Cancel')
-            find_match_line_in_file(latest_cancel_match, 'Cancel')
-            if int(match_info['MatchStartLineNumber']) > int(match_info['MatchCancelLineNumber']):
-                # print("Order doesn't match.")
-                # print (match_info['MatchStartLineNumber'])
-                # print (match_info['MatchEndLineNumber'])
-                pass      
-            else:
-                #print("Order matches.")
-                #find_match_times(latest_ended_match, 'End')
-                #find_match_line_in_file(latest_ended_match, 'End')
-                match_info.pop('MatchEnd', None)
-                match_info.pop('MatchEndLineNumber', None)
-                print (match_info)
-                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
-                    fp.write(f'\n {match_info}')
-                print ("Session ended. Starting new session.")
-                #terminate()
-                completed_match=True
-                time.sleep(5)
-                start_complete_script()
-                return
-#===============================================================================================================================#
-# Match end search  (Clash mode)      
-#===============================================================================================================================#
-        # matched_end_lines = search_string_in_file((latest_file), 'Starting load of match end screen', 0)
-        # print("Checking for finished match")
-        # if len(matched_end_lines) > 0:
-        #     latest_ended_match=matched_end_lines[(len(matched_end_lines)-1)]
-        #     #print(latest_ended_match)
-        #     #Find match end time and match end line number 
-        #     find_match_times(latest_ended_match, 'End')
-        #     find_match_line_in_file(latest_ended_match, 'End')
-        #     if int(match_info['MatchStartLineNumber']) > int(match_info['MatchEndLineNumber']):
-        #         # print("Order doesn't match.")
-        #         # print (match_info['MatchStartLineNumber'])
-        #         # print (match_info['MatchEndLineNumber'])
-        #         #time.sleep(3)
-        #         pass      
-        #     else:
-        #         #print("Order matches.")
-        #         #find_match_times(latest_ended_match, 'End')
-        #         #find_match_line_in_file(latest_ended_match, 'End')
-        #         match_info.pop('MatchCancel', None)
-        #         match_info.pop('MatchCancelLineNumber', None)
-        #         print (match_info)
-        #         print ("Session ended. Starting new session.")
-        #         #terminate()
-        #         completed_match=True
-        #         time.sleep(5)
-        #         start_complete_script()
-        #         return
-
-        time.sleep(5)
+        else:
+            time.sleep(3)
 
 #Track mouse events
 def check_mouse_input():
@@ -223,7 +172,7 @@ def check_mouse_input():
                                 print("Light is already set to main hand settings. Skipping api call.")
                             else:
                                 print("Activating color change.")
-                                Yeelight_control.gauntlets[(main_hand)]()
+                                rgb[(main_hand)]()
                                 last_used_gauntlet=main_hand
                         elif i == 2:
                             print ("Attacking with off hand.")
@@ -236,18 +185,31 @@ def check_mouse_input():
                                 print("Light is already set to main hand settings. Skipping api call.")
                             else:
                                 print("Activating color change.")
-                                Yeelight_control.gauntlets[(main_hand)]()
+                                rgb[(main_hand)]()
                                 last_used_gauntlet=main_hand
                         elif i == 1:
                             print ("Attacking with off hand.")
                             print ("Running gauntlet function.")
                             gauntlet()                    
-        time.sleep(0.3)       
-
-def set_elements():
+        time.sleep(0.3)
+        
+#Set rgb color codes
+def set_rgb_codes():
+    global main_hand
+    global bulb
+    global rgb
+    bulb = Bulb("192.168.178.15")
+    rgb = {
+        'fire': lambda: print (pressHoldRelease("alt", "p")),
+        'toxic': lambda: print (pressHoldRelease("alt", "i")),
+        'ice': lambda: print (pressHoldRelease("alt", "o")),
+        'wind': lambda: print (loop.run_until_complete(make_request('wind'))),
+        'lightning': lambda: print (loop.run_until_complete(make_request('lightning'))),
+        'stone': lambda: print (loop.run_until_complete(make_request('stone'))),
+        'noodle': lambda: print (loop.run_until_complete(make_request('noodle')))
+    }
     all_elements = ["wind", "toxic", "ice", "fire", "stone" ,"lightning", "noodle"]
     global elements
-    global main_hand
     elements = []
     for i in all_elements:
         elements.append(i)
@@ -265,25 +227,25 @@ def find_matches():
         if  matched_start_lines:
             print ("Matches found. Filtering latest match.")
             latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
-            # print ("latest: " +str(latest_started_match))
-            # print ("session: " +str(session_match))
-            print("Checking if this is an old match.")
-            #time.sleep(1)
+            print ("latest: " +str(latest_started_match))
+            print ("session: " +str(session_match))
+            print("checking if they are the same")
+            time.sleep(1)
             if str(latest_started_match)==str(session_match):
-                print("Old match, restarting function.")
-                time.sleep(5)
+                print("Old match, restarting function")
+                time.sleep(1)
                 continue
             else:
-                print("New match detected")
+                print("this is a new match")
                 session_match=(latest_started_match)
-                # print(session_match)
+                print(session_match)
                 match_found==True
                 #Not sure if return below is required. Further testing needed
                 return session_match
             continue 
         else: 
             print ("No Matches found yet.")
-            time.sleep(3)
+            time.sleep(1)
             continue
        
 #Assign the region/location of the screen that has to be looked over to find the off hand
@@ -318,7 +280,6 @@ def start_complete_script():
     global session_match
     global t1
     global t2
-    global elements
     latest_file=""
     match_found=False
     match_info={}
@@ -336,38 +297,27 @@ def start_complete_script():
     find_match_line_in_file(latest_started_match, 'Start')
     #Now that a match has been found, the mainhand can be determined.
     find_main_hand(latest_started_match)
-    set_elements()
     set_gauntlet_position()
     set_special_keys()
     #Main hand found, setting rgb codes:
-    Yeelight_control.set_element_color_codes()
+    set_rgb_codes()
     #Start checking for mouse input and start looking for end of match.
     t1 = Thread(target = find_completed_match)
     t2 = Thread(target = check_mouse_input)
     t1.start()
     t2.start()
-
-def start():
-    global session_match
-    global start_complete_script
-    global working_dir
-    working_dir=str(pathlib.Path(__file__).parent.absolute())
-    session_match=()
-    start_complete_script()
-  
-def reset_gauntlet_position():
-    set_gauntlet_position()
-
-root = Tk()
-root.title("Gauntlet tracker")
-root.geometry("250x250")
-
-app = Frame(root)
-app.grid()
-
-start = Button(app, text="Start tracking", command=start)
-reset_gauntlet_position = Button(app, text="Reset gauntlet position", command=reset_gauntlet_position)
-
-start.grid()
-reset_gauntlet_position.grid()
-root.mainloop()
+    # while True:
+    #     if should_restart==False:
+    #         print ("Match has not finished yet")
+    #         time.sleep(3)
+    #     else:
+    #         print("writing json file")
+    #         should_restart==True
+    #         with open('result.json', 'w') as fp:
+    #             json.dump (match_info, fp)
+    #         break
+    
+global working_dir
+working_dir=str(pathlib.Path(__file__).parent.absolute())
+session_match=()
+start_complete_script()
