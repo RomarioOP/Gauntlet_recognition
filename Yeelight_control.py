@@ -1,7 +1,7 @@
 import yeelight
 from yeelight import Bulb
 from yeelight import LightType
-def set_element_color_codes():
+def set_elements():
     global gauntlets
     bulb = Bulb("192.168.178.15")
     gauntlets = {
@@ -11,7 +11,8 @@ def set_element_color_codes():
         'wind': lambda: print (bulb.set_rgb(255,255,0)),
         'lightning': lambda: print (bulb.set_rgb(127,0,255)),
         'stone': lambda: print (bulb.set_rgb(153,76,8)),
-        'noodle': lambda: print (bulb.set_rgb(255,20,147))
+        'noodle': lambda: print (bulb.set_rgb(255,20,147)),
+        'default': lambda: print (bulb.set_rgb(0,0,255))
     }
 
 

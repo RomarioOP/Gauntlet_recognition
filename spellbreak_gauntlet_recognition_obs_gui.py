@@ -290,9 +290,8 @@ def find_matches():
                 #return session_match
                 return
         else: 
-            print ("No Matches found yet.")
-            time.sleep(2)
-            return
+            print ("No regular matches found yet.")
+            time.sleep(2) 
 #===============================================================================================================================#
 # Match start search  (Practice lobbies)      
 #===============================================================================================================================#
@@ -319,9 +318,8 @@ def find_matches():
                 #return session_match
                 return
         else: 
-            print ("No Matches found yet.")
-            time.sleep(3)
-            return
+            print ("No practice matches found yet.")
+            time.sleep(3)     
        
 #Assign the region/location of the screen that has to be looked over to find the off hand
 def set_gauntlet_position():
@@ -377,7 +375,7 @@ def start_complete_script():
     set_gauntlet_position()
     set_special_keys()
     #Main hand found, setting rgb codes:
-    Obs_hotkeys.set_element_hotkeys()
+    Obs_hotkeys.set_elements()
     #Start checking for mouse input and start looking for end of match.
     t1 = Thread(target = find_completed_match)
     t2 = Thread(target = check_mouse_input)
@@ -388,8 +386,10 @@ def start():
     global session_match
     global start_complete_script
     global working_dir
+    global practice_match
     working_dir=str(pathlib.Path(__file__).parent.absolute())
     session_match=()
+    practice_match=()
     start_complete_script()
   
 def reset_gauntlet_position():

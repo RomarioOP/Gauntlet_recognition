@@ -1,5 +1,5 @@
 import virtual_keystroke
-def set_element_hotkeys():
+def set_elements():
     global gauntlets
     gauntlets = {
         'fire': lambda: virtual_keystroke.pressHoldRelease("F1"),
