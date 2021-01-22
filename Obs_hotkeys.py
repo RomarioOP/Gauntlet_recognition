@@ -8,5 +8,6 @@ def set_element_hotkeys():
         'wind': lambda: virtual_keystroke.pressHoldRelease("F4"),
         'lightning': lambda: virtual_keystroke.pressHoldRelease("F5"),
         'stone': lambda: virtual_keystroke.pressHoldRelease("F6"),
-        'noodle': lambda: virtual_keystroke.pressHoldRelease("F7")
+        'noodle': lambda: virtual_keystroke.pressHoldRelease("F7"),
+        'default': lambda: virtual_keystroke.pressHoldRelease("F8")
     }

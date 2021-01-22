@@ -20,6 +20,7 @@ import _tkinter
 from tkinter import *
 from _tkinter import *
 from subprocess import Popen
+import virtual_keystroke
 #https://stackoverflow.com/questions/27050492/how-do-you-create-a-tkinter-gui-stop-button-to-break-an-infinite-loop
 #https://stackoverflow.com/questions/3430372/how-do-i-get-the-full-path-of-the-current-files-directory
 #https://imgur.com/a/SiqFu6S
@@ -47,7 +48,7 @@ def search_string_in_file(file_name, string_to_search, line_number):
     global list_of_results
     list_of_results = []
     # Open the file in read only mode
-    with open(file_name, 'r') as read_obj:
+    with open(file_name, 'r', encoding='utf8') as read_obj:
         # Read all lines in the file one by one
         for line in read_obj:
             # For each line, check if line contains the string
@@ -136,16 +137,16 @@ def find_completed_match():
                 match_info.pop('MatchCancel', None)
                 match_info.pop('MatchCancelLineNumber', None)
                 print (match_info)
-                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
-                    fp.write(f'\n {match_info}')
-                print ("Session ended. Starting new session.")
+                # with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
+                #     fp.write(f'\n {match_info}')
+                # print ("Session ended. Starting new session.")
                 #terminate()
                 completed_match=True
-                time.sleep(5)
+                time.sleep(3)
                 start_complete_script()
                 return
 #===============================================================================================================================#
-# Match cancel search               
+# Match cancel search     Works for canceled matches and Clash matches.          
 #===============================================================================================================================#
         matched_cancel_lines = search_string_in_file((latest_file), 'StartLoadingLevel /Game/Maps/MainMenu/MainMenu_Root', 0)
         print("Checking canceled match")
@@ -166,13 +167,13 @@ def find_completed_match():
                 #find_match_line_in_file(latest_ended_match, 'End')
                 match_info.pop('MatchEnd', None)
                 match_info.pop('MatchEndLineNumber', None)
-                print (match_info)
-                with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
-                    fp.write(f'\n {match_info}')
+                # print (match_info)
+                # with open((working_dir)+"\\Match_results\\result_"+time.strftime("%Y%m%d")+".log", 'a') as fp:
+                #     fp.write(f'\n {match_info}')
                 print ("Session ended. Starting new session.")
                 #terminate()
                 completed_match=True
-                time.sleep(5)
+                time.sleep(3)
                 start_complete_script()
                 return
 #===============================================================================================================================#
@@ -205,7 +206,6 @@ def find_completed_match():
         #         time.sleep(5)
         #         start_complete_script()
         #         return
-
         time.sleep(5)
 
 #Track mouse events
@@ -255,43 +255,77 @@ def set_elements():
     
 #Check if a matches have been found
 def find_matches():
+    global match_found
     while match_found==False:
         global matched_start_lines
         global latest_started_match
         global session_match
+        global practice_match
         find_latest_log_file()
+#===============================================================================================================================#
+# Match start search  (Regular lobbies)      
+#===============================================================================================================================#
         matched_start_lines = search_string_in_file((latest_file), 'CONNECTING TO IP', 0)
-        print("Looking for matches.")
+        print("Looking for regular matches.")
         if  matched_start_lines:
-            print ("Matches found. Filtering latest match.")
-            latest_started_match=matched_start_lines[(len(matched_start_lines)-1)]
-            # print ("latest: " +str(latest_started_match))
-            # print ("session: " +str(session_match))
+            print ("Regular matches found. Filtering latest match.")
+            latest_regular_match=matched_start_lines[(len(matched_start_lines)-1)]    
+            #print ("latest: " +str(latest_regular_match))
+            #print ("session: " +str(session_match))
             print("Checking if this is an old match.")
             #time.sleep(1)
-            if str(latest_started_match)==str(session_match):
+            if str(latest_regular_match)==str(session_match):
                 print("Old match, restarting function.")
-                time.sleep(5)
-                continue
+                time.sleep(1)
+                pass
             else:
-                print("New match detected")
+                print("New regular match detected")
+                latest_started_match=latest_regular_match
                 session_match=(latest_started_match)
                 # print(session_match)
                 match_found==True
                 #Not sure if return below is required. Further testing needed
-                return session_match
-            continue 
+                #return session_match
+                return
+        else: 
+            print ("No Matches found yet.")
+            time.sleep(2)
+            return
+#===============================================================================================================================#
+# Match start search  (Practice lobbies)      
+#===============================================================================================================================#
+        matched_start_lines = search_string_in_file((latest_file), 'LoadMap: /Game/Maps/Longshot/Practice', 0)
+        print("Looking for practice matches.")
+        if  matched_start_lines:
+            print ("Practice matches found.Filtering latest match.")
+            latest_practice_match=matched_start_lines[(len(matched_start_lines)-1)]
+            #print ("latest: " +str(latest_practice_match))
+            #print ("session: " +str(practice_match))
+            print("Checking if this is an old match.")
+            #time.sleep(1)
+            if str(latest_practice_match)==str(practice_match):
+                print("Old match, restarting function.")
+                time.sleep(2)
+                pass
+            else:
+                print("New practice match detected")
+                latest_started_match=latest_practice_match
+                practice_match=(latest_started_match)
+                # print(session_match)
+                match_found==True
+                #Not sure if return below is required. Further testing needed
+                #return session_match
+                return
         else: 
             print ("No Matches found yet.")
             time.sleep(3)
-            continue
+            return
        
 #Assign the region/location of the screen that has to be looked over to find the off hand
 def set_gauntlet_position():
     global region
     global gauntlet_swap
-    #with open('C:\\Users\\romar\\AppData\\Local\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
-    with open(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini') as f:
+    with open(os.getenv('LOCALAPPDATA')+'\\g3\\Saved\\Config\\WindowsNoEditor\\GameUserSettings.ini', encoding="utf8") as f:
         if 'bSwapGauntletSlots=False' in f.read():
             region=(1150,915,65,70)
             gauntlet_swap=False
@@ -316,6 +350,7 @@ def start_complete_script():
     global last_offhand
     global main_hand
     global session_match
+    global practice_match
     global t1
     global t2
     global elements
@@ -350,4 +385,5 @@ def start_complete_script():
 global working_dir
 working_dir=str(pathlib.Path(__file__).parent.absolute())
 session_match=()
+practice_match=()
 start_complete_script()
