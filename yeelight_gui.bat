@@ -1,1 +1,1 @@
-python.exe ./spellbreak_gauntlet_recognition_gui.py
+python.exe ./Gauntlet_yeelight.py
